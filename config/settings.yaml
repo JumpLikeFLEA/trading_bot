@@ -1,0 +1,40 @@
+# --- Trading 212 API Configuration ---
+t212:
+  base_url: "https://demo.trading212.com/api/v0" # Practice Mode (Hardcoded for safety)
+  api_key: "YOUR_T212_API_KEY_HERE" # Replace with your actual T212 API key
+  dry_run: true # Set to false to enable real (practice mode) orders
+
+# --- Strategy & Execution Configuration ---
+strategy:
+  # List of tickers to track and trade
+  tickers:
+    - "AAPL_US_EQ" # Apple
+    - "MSFT_US_EQ" # Microsoft
+    - "GOOG_US_EQ" # Alphabet
+    - "TSLA_US_EQ" # Tesla
+  
+  risk_limits:
+    # Maximum value in account currency allowed per single position
+    max_position_size: 1000.0
+    # Maximum percentage of total account equity for a single trade
+    max_trade_weight: 0.1
+    # Stop-loss threshold for individual positions (e.g., 0.05 for 5%)
+    stop_loss_pct: 0.05
+
+# --- Data Provider Configuration ---
+data:
+  # Primary data source for historical candles (e.g., "YahooFinance", "AlphaVantage")
+  external_source: "YahooFinance"
+  # API Key for the external data source (if applicable)
+  external_api_key: "YOUR_EXTERNAL_API_KEY_HERE"
+  # Default candle interval for analysis
+  default_interval: "1h"
+
+# --- Logging Configuration ---
+logging:
+  # Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  level: "INFO"
+  # Path to the log file
+  log_file: "logs/trading_bot.log"
+  # Whether to also log to the console
+  log_to_console: true

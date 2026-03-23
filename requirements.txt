@@ -1,0 +1,8 @@
+pandas
+numpy
+PyYAML
+requests
+pydantic
+python-dotenv
+nuitka
+zstandard
