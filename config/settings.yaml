@@ -6,6 +6,15 @@ t212:
 
 # --- Strategy & Execution Configuration ---
 strategy:
+  # The strategy to use. This must be a registered name in the StrategyRegistry.
+  # Options: "MovingAverageCrossover", etc.
+  active_strategy: "MovingAverageCrossover"
+  
+  # Strategy-specific parameters
+  strategy_params:
+    short_window: 5
+    long_window: 20
+
   # List of tickers to track and trade
   tickers:
     - "AAPL_US_EQ" # Apple

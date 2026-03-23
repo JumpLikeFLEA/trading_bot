@@ -8,7 +8,6 @@ from typing import List, Dict
 from src.api.t212_client import T212Client
 from src.data.provider import DataProvider
 from src.strategies.base import StrategyRegistry
-from src.strategies.moving_average_alpha import MovingAverageCrossover # Register the sample alpha
 from src.core.validator import SignalValidator
 from src.execution.engine import ExecutionEngine
 from src.utils.logger import setup_logger
@@ -51,13 +50,20 @@ def main():
     execution_engine = ExecutionEngine(client=client, risk_limits=config["strategy"]["risk_limits"])
 
     # 3. Strategy Loading
-    # Example: Loading the MovingAverageCrossover strategy by name from the registry
-    strategy_name = "MovingAverageCrossover"
+    # Dynamic strategy loading based on config or environment variable
+    strategy_name = os.getenv("ACTIVE_STRATEGY") or config.get("strategy", {}).get("active_strategy")
+    strategy_params = config.get("strategy", {}).get("strategy_params", {})
+    tickers = config.get("strategy", {}).get("tickers", [])
+    
+    if not strategy_name:
+        logger.error("No active strategy defined in config or environment variables.")
+        return
+
     try:
-        strategy = StrategyRegistry.get_strategy(strategy_name)
-        logger.info(f"Loaded strategy: {strategy_name}")
-    except ValueError as e:
-        logger.error(f"Failed to load strategy: {e}")
+        strategy = StrategyRegistry.get_strategy(strategy_name, tickers=tickers, **strategy_params)
+        logger.info(f"Loaded strategy: {strategy_name} with parameters: {strategy_params}")
+    except (ValueError, TypeError) as e:
+        logger.error(f"Failed to load strategy '{strategy_name}': {e}")
         return
 
     # 4. Market Data Acquisition

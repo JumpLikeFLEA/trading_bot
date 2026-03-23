@@ -9,8 +9,8 @@ class MovingAverageCrossover(StrategyBase):
     A sample strategy that generates BUY signals when a short-term moving average
     crosses above a long-term moving average.
     """
-    def __init__(self, name: str, short_window: int = 5, long_window: int = 20):
-        super().__init__(name)
+    def __init__(self, name: str, short_window: int = 5, long_window: int = 20, tickers: List[str] = None, **kwargs):
+        super().__init__(name, tickers=tickers, **kwargs)
         self.short_window = short_window
         self.long_window = long_window
 
@@ -56,8 +56,3 @@ class MovingAverageCrossover(StrategyBase):
             
         return signals
 
-    def get_tickers(self) -> List[str]:
-        """
-        Return the list of tickers to fetch data for.
-        """
-        return ["AAPL_US_EQ", "MSFT_US_EQ", "GOOG_US_EQ", "TSLA_US_EQ"]
