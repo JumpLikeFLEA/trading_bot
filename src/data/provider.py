@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import yfinance as yf
 from typing import List, Optional, Dict, Any
 import datetime
 
@@ -24,8 +25,7 @@ class DataProvider:
 
     def fetch_historical_candles(self, ticker: str, interval: str = "1h", limit: int = 100) -> pd.DataFrame:
         """
-        Fetch historical candle data for a ticker.
-        Placeholder for external source integration (Yahoo Finance/Alpha Vantage).
+        Fetch historical candle data for a ticker using yfinance.
         
         Args:
             ticker: Ticker symbol (e.g., "AAPL").
@@ -35,29 +35,73 @@ class DataProvider:
         Returns:
             pd.DataFrame: Candle data (timestamp, open, high, low, close, volume).
         """
-        logger.info(f"Fetching {limit} historical candles for {ticker} at {interval} interval.")
+        logger.info(f"Fetching historical candles for {ticker} at {interval} interval.")
         
-        # --- PLACEHOLDER: Integration with External Data Provider ---
-        # Example using yfinance:
-        # import yfinance as yf
-        # df = yf.download(ticker, interval=interval, period="1mo")
-        # return df
+        # Map T212 ticker format if necessary (e.g., AAPL_US_EQ -> AAPL)
+        clean_ticker = ticker.split('_')[0]
         
-        # For now, return a mock DataFrame to illustrate structure
-        mock_timestamps = [datetime.datetime.now() - datetime.timedelta(hours=i) for i in range(limit)]
-        mock_data = {
-            'timestamp': pd.to_datetime(mock_timestamps),
-            'open': [150.0 + (i % 5) for i in range(limit)],
-            'high': [155.0 + (i % 5) for i in range(limit)],
-            'low': [145.0 + (i % 5) for i in range(limit)],
-            'close': [152.0 + (i % 5) for i in range(limit)],
-            'volume': [10000 + (i * 100) for i in range(limit)]
-        }
+        # Calculate period based on limit and interval to ensure we get enough data
+        # This is a simplification; yfinance uses 'period' or 'start'/'end'
+        period_map = {"1m": "1d", "5m": "5d", "1h": "1mo", "1d": "1y"}
+        period = period_map.get(interval, "1mo")
+
+        try:
+            df = yf.download(clean_ticker, interval=interval, period=period, progress=False)
+            if df.empty:
+                logger.warning(f"No data found for {clean_ticker}")
+                return pd.DataFrame()
+            
+            # Clean up column names (yfinance returns MultiIndex if multiple tickers)
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+            
+            df.columns = [col.lower() for col in df.columns]
+            
+            # Limit to the requested number of rows
+            return df.tail(limit)
+        except Exception as e:
+            logger.error(f"Failed to fetch data from yfinance for {clean_ticker}: {e}")
+            return pd.DataFrame()
+
+    def get_fundamentals(self, tickers: List[str]) -> pd.DataFrame:
+        """
+        Retrieve fundamental data for a list of tickers.
+        Required for Value Alpha strategy.
         
-        df = pd.DataFrame(mock_data)
-        df.set_index('timestamp', inplace=True)
-        df.sort_index(ascending=True, inplace=True)
-        
+        Args:
+            tickers: List of ticker symbols.
+            
+        Returns:
+            pd.DataFrame: Fundamental metrics indexed by ticker.
+        """
+        logger.info(f"Fetching fundamental data for {len(tickers)} tickers.")
+        fundamentals_data = []
+
+        for ticker in tickers:
+            clean_ticker = ticker.split('_')[0]
+            try:
+                stock = yf.Ticker(clean_ticker)
+                info = stock.info
+                
+                fundamentals_data.append({
+                    "ticker": ticker,
+                    "marketCap": info.get("marketCap"),
+                    "operatingCashflow": info.get("operatingCashflow"),
+                    "enterpriseValue": info.get("enterpriseValue"),
+                    "ebitda": info.get("ebitda")
+                })
+            except Exception as e:
+                logger.error(f"Failed to fetch fundamentals for {clean_ticker}: {e}")
+                fundamentals_data.append({
+                    "ticker": ticker,
+                    "marketCap": None,
+                    "operatingCashflow": None,
+                    "enterpriseValue": None,
+                    "ebitda": None
+                })
+
+        df = pd.DataFrame(fundamentals_data)
+        df.set_index("ticker", inplace=True)
         return df
 
     def get_realtime_price(self, ticker: str) -> float:

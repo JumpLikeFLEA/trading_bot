@@ -19,18 +19,22 @@ class ExecutionEngine:
             risk_limits: Portfolio risk configuration.
         """
         self.client = client
-        self.risk_limits = risk_limits or {"max_position_size": 1000.0}
+        self.risk_limits = risk_limits or {
+            "max_position_size": 1000.0,
+            "max_trade_weight": 0.1,
+            "stop_loss_pct": 0.05
+        }
         self._instrument_cache = {}
+        self._refresh_instruments()
 
     def _refresh_instruments(self):
         """Cache instrument details for ticker validation and ID lookup."""
-        if not self._instrument_cache:
-            try:
-                instruments = self.client.get_instruments()
-                self._instrument_cache = {i.ticker: i for i in instruments}
-                logger.info(f"Instrument cache refreshed: {len(self._instrument_cache)} symbols.")
-            except Exception as e:
-                logger.error(f"Failed to refresh instruments: {e}")
+        try:
+            instruments = self.client.get_instruments()
+            self._instrument_cache = {i.ticker: i for i in instruments}
+            logger.info(f"Instrument cache refreshed: {len(self._instrument_cache)} symbols.")
+        except Exception as e:
+            logger.error(f"Failed to refresh instruments: {e}")
 
     def calculate_quantity(self, signal: Signal) -> float:
         """
@@ -73,8 +77,6 @@ class ExecutionEngine:
         Args:
             signals: A list of validated signals.
         """
-        self._refresh_instruments()
-        
         for signal in signals:
             if signal.side == SignalSide.HOLD:
                 continue
@@ -83,12 +85,16 @@ class ExecutionEngine:
                 logger.warning(f"Symbol {signal.symbol} not available on T212. Skipping.")
                 continue
 
+            # Use T212 Internal ID for order placement
+            instrument = self._instrument_cache[signal.symbol]
+            instrument_id = instrument.ticker # This is the internal ID
+
             quantity = self.calculate_quantity(signal)
             if quantity == 0:
                 continue
 
             try:
-                logger.info(f"Placing order: {signal.symbol} | {signal.side} | Qty={quantity}")
-                self.client.place_order(signal.symbol, quantity)
+                logger.info(f"Placing order: {signal.symbol} (ID: {instrument_id}) | {signal.side} | Qty={quantity}")
+                self.client.place_order(instrument_id, quantity)
             except Exception as e:
                 logger.error(f"Order placement failed for {signal.symbol}: {e}")

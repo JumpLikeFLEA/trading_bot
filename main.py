@@ -66,9 +66,15 @@ def main():
         logger.error(f"Failed to load strategy '{strategy_name}': {e}")
         return
 
-    # 4. Market Data Acquisition
+    # 4. Market Data & Fundamental Acquisition
     tickers = strategy.get_tickers()
     market_data: Dict[str, pd.DataFrame] = {}
+    fundamental_data: pd.DataFrame = None
+
+    # Fetch fundamentals if needed by the strategy
+    if strategy_name == "ValueRankAlpha":
+        logger.info(f"Fetching fundamental data for strategy: {strategy_name}")
+        fundamental_data = data_provider.get_fundamentals(tickers)
     
     for ticker in tickers:
         try:
@@ -80,7 +86,7 @@ def main():
 
     # 5. Signal Generation
     logger.info("Generating signals...")
-    raw_signals = strategy.generate_signals(market_data)
+    raw_signals = strategy.generate_signals(market_data, fundamental_data=fundamental_data)
     logger.info(f"Generated {len(raw_signals)} raw signals.")
 
     # 6. Signal Validation

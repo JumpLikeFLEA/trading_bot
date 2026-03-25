@@ -17,12 +17,13 @@ class StrategyBase(ABC):
         self.params = kwargs
 
     @abstractmethod
-    def generate_signals(self, market_data: Dict[str, pd.DataFrame]) -> List[Signal]:
+    def generate_signals(self, market_data: Dict[str, pd.DataFrame], fundamental_data: pd.DataFrame = None) -> List[Signal]:
         """
-        Produce a list of standardized signals based on market data.
+        Produce a list of standardized signals based on market data and optional fundamentals.
         
         Args:
             market_data: Dictionary mapping ticker symbols to their historical/real-time DataFrames.
+            fundamental_data: Optional DataFrame with fundamental metrics for the tickers.
             
         Returns:
             List[Signal]: A list of validated signal objects.

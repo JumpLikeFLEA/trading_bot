@@ -4,6 +4,7 @@ PyYAML
 requests
 pydantic
 python-dotenv
+yfinance
 nuitka
 zstandard
 pytest

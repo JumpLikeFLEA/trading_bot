@@ -105,15 +105,13 @@ class T212Client:
         Place an order.
         quantity: positive for Buy, negative for Sell.
         """
-        # T212 API expects positive quantity and uses the endpoint or additional fields to distinguish buy/sell.
-        # However, for this shell, we follow the instruction: quantity positive for Buy, negative for Sell.
-        
         is_buy = quantity > 0
         abs_quantity = abs(quantity)
         
         payload = {
             "ticker": ticker,
-            "quantity": abs_quantity
+            "quantity": abs_quantity,
+            "action": "BUY" if is_buy else "SELL"
         }
         
         if order_type == OrderType.MARKET:
@@ -126,8 +124,6 @@ class T212Client:
         else:
             raise NotImplementedError(f"Order type {order_type} not yet implemented in this shell.")
 
-        logger.info(f"Placing {order_type.value} {'BUY' if is_buy else 'SELL'} order for {ticker}: quantity={abs_quantity}")
+        logger.info(f"Placing {order_type.value} {payload['action']} order for {ticker}: quantity={abs_quantity}")
         
-        # In actual T212 API, you might need to specify the side or use different logic.
-        # For the purpose of this infrastructure shell, we use POST.
         return self._request("POST", endpoint, json=payload)
